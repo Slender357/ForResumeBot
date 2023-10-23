@@ -1,0 +1,81 @@
+version: '3.9'
+
+services:
+    postgres:
+      image: postgres:13
+      container_name: test_postgres
+      restart: always
+      volumes:
+        - pg_test_volume:/var/lib/postgresql/data/
+        - ./database/dump:/docker-entrypoint-initdb.d
+      env_file:
+        - .env
+      environment:
+        - POSTGRES_USER=${DB_USER}
+        - POSTGRES_PASSWORD=${DB_PASSWORD}
+        - POSTGRES_DB=${DB_NAME}
+      healthcheck:
+        test: [ "CMD-SHELL", "pg_isready -U app -d ${DB_NAME}" ]
+        interval: 10s
+        timeout: 5s
+        retries: 5
+    rabbit:
+      image: rabbitmq:3-management
+      container_name: test_rabbit
+      restart: always
+      volumes:
+        - rabbit_test_volume:/var/lib/rabbitmq
+      healthcheck:
+        test: [ "CMD", "rabbitmq-diagnostics", "check_running" ]
+        interval: 10s
+        timeout: 5s
+        retries: 30
+    aiobot:
+      build:
+        context: .
+        dockerfile: ./aiobot/Dockerfile
+      container_name: test_aiobot
+      restart: always
+      env_file:
+        - .env
+      depends_on:
+        rabbit:
+          condition: service_healthy
+        postgres:
+          condition: service_healthy
+    checker:
+      build:
+        context: .
+        dockerfile: ./checker/Dockerfile
+      container_name: test_checker
+      restart: always
+      env_file:
+        - .env
+      depends_on:
+        rabbit:
+          condition: service_healthy
+        postgres:
+          condition: service_healthy
+        aiobot:
+          condition: service_started
+    sender:
+      build:
+        context: .
+        dockerfile: ./sender/Dockerfile
+      container_name: test_sender
+      restart: always
+      env_file:
+        - .env
+      depends_on:
+        rabbit:
+          condition: service_healthy
+        postgres:
+          condition: service_healthy
+        aiobot:
+          condition: service_started
+
+volumes:
+    pg_test_volume:
+      name: pg_test_volume
+    rabbit_test_volume:
+      name: rabbit_test_volume

@@ -1,0 +1,43 @@
+version: '3.9'
+
+services:
+    postgres:
+      image: postgres:13
+      container_name: test_postgres
+      restart: always
+      volumes:
+        - pg_test_volume:/var/lib/postgresql/data/
+        - ./database/dump:/docker-entrypoint-initdb.d
+      env_file:
+        - .env
+      ports:
+        - '5432:5432'
+      environment:
+        - POSTGRES_USER=${DB_USER}
+        - POSTGRES_PASSWORD=${DB_PASSWORD}
+        - POSTGRES_DB=${DB_NAME}
+      healthcheck:
+        test: [ "CMD-SHELL", "pg_isready -U app -d ${DB_NAME}" ]
+        interval: 10s
+        timeout: 5s
+        retries: 5
+    rabbit:
+      image: rabbitmq:3-management
+      container_name: test_rabbit
+      volumes:
+        - rabbit_test_volume:/var/lib/rabbitmq
+      ports:
+        - '5672:5672'
+        - '15672:15672'
+        - '25672:25672'
+      healthcheck:
+        test: [ "CMD", "rabbitmq-diagnostics", "check_running" ]
+        interval: 10s
+        timeout: 5s
+        retries: 30
+
+volumes:
+    pg_test_volume:
+      name: pg_test_volume
+    rabbit_test_volume:
+      name: rabbit_test_volume

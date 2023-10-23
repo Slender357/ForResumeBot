@@ -1,0 +1,14 @@
+schedule==1.2.0
+asyncpg==0.28.0
+pydantic==2.3.0
+pydantic-settings==2.0.3
+pydantic_core==2.6.3
+SQLAlchemy==2.0.21
+psycopg2-binary==2.9.7
+orjson==3.9.7
+aio-pika==9.3.0
+aiogram==3.1.0
+
+
+
+
